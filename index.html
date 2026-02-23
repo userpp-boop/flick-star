@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLICK STAR | Pro Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --neon-blue: #00f2ff; --neon-pink: #ff0055; --bg-dark: #020205; }
+        body { margin: 0; padding: 0; overflow: hidden; background-color: var(--bg-dark); font-family: 'Orbitron', sans-serif; color: #fff; user-select: none; }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        #main-menu {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #0a0a20 0%, #000 100%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+        }
+        .menu-container {
+            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(25px);
+            padding: 30px 40px; border-radius: 30px; border: 1px solid rgba(0, 242, 255, 0.2);
+            text-align: center; width: 440px; box-shadow: 0 0 50px rgba(0,0,0,0.8);
+        }
+        h1 { font-size: 2.8rem; font-weight: 900; margin: 0; background: linear-gradient(to bottom, #fff, var(--neon-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 30px rgba(0, 242, 255, 0.5); letter-spacing: 5px; }
+        .sub-title { color: var(--neon-pink); font-size: 0.7rem; letter-spacing: 5px; margin-bottom: 15px; font-weight: bold; }
+
+        .rank-card { background: rgba(255, 0, 85, 0.1); border: 1px dashed var(--neon-pink); padding: 12px; border-radius: 12px; margin-bottom: 20px; }
+        #best-score { color: var(--neon-blue); font-size: 1rem; }
+        #rank-name { font-size: 1.2rem; display: block; margin-top: 5px; text-shadow: 0 0 10px #fff; }
+
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-bottom: 15px; }
+        label { font-size: 0.6rem; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 1px; }
+        input, select { width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(0, 242, 255, 0.3); border-radius: 6px; color: #fff; font-family: 'Orbitron'; font-size: 0.8rem; margin-top: 5px; outline: none; box-sizing: border-box; }
+
+        .btn-glow { width: 100%; padding: 15px; margin-top: 10px; background: var(--neon-blue); color: #000; border: none; border-radius: 10px; font-weight: 900; font-size: 1rem; cursor: pointer; transition: 0.3s; }
+        .btn-glow:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 0 20px var(--neon-blue); }
+
+        #rank-sidebar-btn { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.8); border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 25px 12px; cursor: pointer; writing-mode: vertical-rl; border-radius: 12px; font-size: 0.7rem; letter-spacing: 2px; transition: 0.3s; z-index: 1001; }
+        #rank-modal { position: absolute; left: -400px; top: 0; width: 320px; height: 100%; background: rgba(0,0,0,0.95); border-right: 2px solid var(--neon-blue); z-index: 2000; transition: 0.5s ease-in-out; padding: 40px 20px; box-sizing: border-box; }
+        #rank-modal.active { left: 0; }
+        .close-rank { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; color: var(--neon-pink); }
+
+        /* Crosshair Styling */
+        #crosshair-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; pointer-events: none; z-index: 100; }
+        .ch-line-v { position: absolute; left: 50%; transform: translateX(-50%); width: 2px; height: 10px; }
+        .ch-line-h { position: absolute; top: 50%; transform: translateY(-50%); height: 2px; width: 10px; }
+        .ch-dot { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; border-radius: 50%; transform: translate(-50%, -50%); }
+        .ch-circle { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); box-sizing: border-box; }
+
+        #hud { position: absolute; top: 20px; left: 20px; display: none; z-index: 10; pointer-events: none; }
+        .hud-item { background: rgba(0,0,0,0.8); padding: 8px 15px; border-left: 4px solid var(--neon-pink); margin-bottom: 5px; font-size: 0.8rem; border-radius: 0 8px 8px 0; }
+        #pause-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; }
+    </style>
+</head>
+<body>
+
+    <div id="rank-modal">
+        <div class="close-rank" id="close-rank-btn">&times;</div>
+        <h2 style="color: var(--neon-blue);">RANKS</h2>
+        <div style="font-size: 0.8rem; line-height: 1.6;">
+            <p><b style="color:var(--neon-blue)">0-100:</b> POTATO BOT 🥔</p>
+            <p><b>101-500:</b> TURBO SNAIL 🐌</p>
+            <p><b>501-1200:</b> DAILY CLOWN 🤡</p>
+            <p><b>1201-2500:</b> SEMI-HUMAN 🤖</p>
+            <p><b>2501+:</b> HEKARI'S DISCIPLE 👽</p>
+        </div>
+    </div>
+
+    <div id="rank-sidebar-btn">VIEW RANKS</div>
+
+    <div id="main-menu">
+        <div class="menu-container">
+            <h1>FLICK STAR</h1>
+            <div class="sub-title">BY HEKARI</div>
+            
+            <div class="rank-card">
+                <span id="best-score">BEST: 0000</span>
+                <span id="rank-name">POTATO BOT 🥔</span>
+            </div>
+
+            <div class="input-field" style="text-align:left; margin-bottom:15px;">
+                <label>Agent Name</label>
+                <input type="text" id="username" placeholder="Guest">
+            </div>
+
+            <div class="settings-grid">
+                <div>
+                    <label>Sensitivity</label>
+                    <input type="number" id="sens" value="1.0" step="0.1">
+                </div>
+                <div>
+                    <label>Color</label>
+                    <select id="color">
+                        <option value="#0f0">GREEN</option>
+                        <option value="#f00">RED</option>
+                        <option value="#00f">BLUE</option>
+                        <option value="#ff0">GOLD</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="text-align: left; margin-bottom: 20px;">
+                <label>Crosshair Style</label>
+                <select id="ch-style">
+                    <option value="classic">Classic (Lines + Dot)</option>
+                    <option value="circle">Circle</option>
+                    <option value="default">Default Ring</option>
+                    <option value="nodot">Cross (No Dot)</option>
+                    <option value="dot">Dot Only</option>
+                </select>
+            </div>
+
+            <button class="btn-glow" id="start-btn">ENGAGE MISSION</button>
+        </div>
+    </div>
+
+    <div id="crosshair-container"></div>
+
+    <div id="pause-overlay">
+        <h1 style="color: var(--neon-blue);">PAUSED</h1>
+        <button class="btn-glow" style="width: 250px;" id="resume-btn">CONTINUE</button>
+        <button class="btn-glow" style="width: 250px; background: none; border: 1px solid #fff; color: #fff; margin-top: 15px;" id="quit-btn">ABORT</button>
+    </div>
+
+    <div id="hud">
+        <div class="hud-item">AGENT: <span id="ui-user">-</span></div>
+        <div class="hud-item">SCORE: <span id="score-val">0</span></div>
+        <div class="hud-item">TIME: <span id="time-val">30.0</span>s</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        function getRank(score) {
+            if (score >= 2501) return "HEKARI'S DISCIPLE 👽";
+            if (score >= 1201) return "SEMI-HUMAN 🤖";
+            if (score >= 501) return "DAILY CLOWN 🤡";
+            if (score >= 101) return "TURBO SNAIL 🐌";
+            return "POTATO BOT 🥔";
+        }
+
+        function updateMenuInfo() {
+            const high = localStorage.getItem('flickstar_highscore') || 0;
+            document.getElementById('best-score').innerText = "BEST: " + high;
+            document.getElementById('rank-name').innerText = getRank(parseInt(high));
+        }
+
+        function setCrosshair(style, color) {
+            const container = document.getElementById('crosshair-container');
+            container.innerHTML = '';
+            container.style.display = 'block';
+
+            if (style === 'classic' || style === 'nodot') {
+                container.innerHTML += `<div class="ch-line-v" style="top:-12px; background:${color}"></div>`;
+                container.innerHTML += `<div class="ch-line-v" style="top:2px; background:${color}"></div>`;
+                container.innerHTML += `<div class="ch-line-h" style="left:-12px; background:${color}"></div>`;
+                container.innerHTML += `<div class="ch-line-h" style="left:2px; background:${color}"></div>`;
+                if(style === 'classic') container.innerHTML += `<div class="ch-dot" style="background:${color}"></div>`;
+            } else if (style === 'circle') {
+                container.innerHTML += `<div class="ch-circle" style="border: 2px solid ${color}"></div>`;
+            } else if (style === 'dot') {
+                container.innerHTML += `<div class="ch-dot" style="background:${color}"></div>`;
+            } else {
+                container.innerHTML += `<div style="width:14px; height:14px; border:2px solid ${color}; border-radius:50%"></div>`;
+            }
+        }
+
+        document.getElementById('rank-sidebar-btn').onclick = () => document.getElementById('rank-modal').classList.add('active');
+        document.getElementById('close-rank-btn').onclick = () => document.getElementById('rank-modal').classList.remove('active');
+
+        document.getElementById('username').value = localStorage.getItem('flickstar_user') || "";
+        document.getElementById('sens').value = localStorage.getItem('flickstar_sens') || "1.0";
+        document.getElementById('color').value = localStorage.getItem('flickstar_color') || "#0f0";
+        document.getElementById('ch-style').value = localStorage.getItem('flickstar_style') || "default";
+        updateMenuInfo();
+
+        let score = 0, timeLeft = 30, gameActive = false, isPaused = false;
+        let sensitivity = 0.001, currentTarget = null;
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        scene.add(new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(Array.from({length: 4500}, () => (Math.random()-0.5)*150), 3)), new THREE.PointsMaterial({color: 0x333344, size: 0.05})));
+
+        const targetMat = new THREE.PointsMaterial({ size: 1.8, transparent: true, blending: THREE.AdditiveBlending, map: (function(){ const c = document.createElement('canvas'); c.width=64; c.height=64; const g = c.getContext('2d').createRadialGradient(32,32,0,32,32,32); g.addColorStop(0, '#fff'); g.addColorStop(0.3, '#ff0055'); g.addColorStop(1, 'transparent'); c.getContext('2d').fillStyle = g; c.getContext('2d').arc(32,32,32,0,Math.PI*2); c.getContext('2d').fill(); return new THREE.CanvasTexture(c); })() });
+
+        function spawn() {
+            if(currentTarget) scene.remove(currentTarget);
+            const g = new THREE.BufferGeometry();
+            g.setAttribute('position', new THREE.Float32BufferAttribute([(Math.random()-0.5)*22, (Math.random()-0.5)*14, -18], 3));
+            currentTarget = new THREE.Points(g, targetMat);
+            scene.add(currentTarget);
+        }
+
+        document.getElementById('start-btn').onclick = () => {
+            const user = document.getElementById('username').value || "Guest";
+            const sens = document.getElementById('sens').value;
+            const col = document.getElementById('color').value;
+            const style = document.getElementById('ch-style').value;
+
+            localStorage.setItem('flickstar_user', user);
+            localStorage.setItem('flickstar_sens', sens);
+            localStorage.setItem('flickstar_color', col);
+            localStorage.setItem('flickstar_style', style);
+
+            sensitivity = 0.0009 * parseFloat(sens);
+            setCrosshair(style, col);
+            document.getElementById('ui-user').innerText = user;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('rank-sidebar-btn').style.display = 'none';
+            document.getElementById('hud').style.display = 'block';
+            document.body.requestPointerLock();
+            gameActive = true; score = 0; timeLeft = 30; spawn();
+        };
+
+        document.getElementById('resume-btn').onclick = () => document.body.requestPointerLock();
+        document.getElementById('quit-btn').onclick = () => location.reload();
+
+        document.addEventListener('pointerlockchange', () => {
+            isPaused = document.pointerLockElement !== document.body && gameActive;
+            document.getElementById('pause-overlay').style.display = isPaused ? 'flex' : 'none';
+            document.getElementById('crosshair-container').style.display = isPaused ? 'none' : 'block';
+        });
+
+        setInterval(() => {
+            if(gameActive && !isPaused) {
+                timeLeft -= 0.1;
+                document.getElementById('time-val').innerText = Math.max(0, timeLeft).toFixed(1);
+                if(timeLeft <= 0) {
+                    gameActive = false;
+                    const high = localStorage.getItem('flickstar_highscore') || 0;
+                    if(score > high) localStorage.setItem('flickstar_highscore', score);
+                    alert("FINAL: " + score + " | RANK: " + getRank(score));
+                    location.reload();
+                }
+            }
+        }, 100);
+
+        document.addEventListener('mousemove', (e) => {
+            if(gameActive && !isPaused && document.pointerLockElement) {
+                camera.rotation.y -= e.movementX * sensitivity;
+                camera.rotation.x -= e.movementY * sensitivity;
+                camera.rotation.x = Math.max(-1.3, Math.min(1.3, camera.rotation.x));
+            }
+        });
+
+        window.onmousedown = () => {
+            if(!gameActive || isPaused) return;
+            const r = new THREE.Raycaster();
+            r.setFromCamera(new THREE.Vector2(0,0), camera);
+            r.params.Points.threshold = 0.8;
+            if(r.intersectObject(currentTarget).length > 0) {
+                score += 10; timeLeft += 0.35;
+                document.getElementById('score-val').innerText = score;
+                spawn();
+            }
+        };
+
+        camera.rotation.order = 'YXZ';
+        function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
+        animate();
+        window.onresize = () => { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); };
+    </script>
+</body>
+</html>
