@@ -1,267 +1,634 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FLICK STAR | Pro Edition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root { --neon-blue: #00f2ff; --neon-pink: #ff0055; --bg-dark: #020205; }
-        body { margin: 0; padding: 0; overflow: hidden; background-color: var(--bg-dark); font-family: 'Orbitron', sans-serif; color: #fff; user-select: none; }
-        canvas { display: block; width: 100%; height: 100%; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLICK STAR — PRO EDITION</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--acc:#00ffe7;--acc2:#ff2d6b;--acc3:#ffc400;--bg:#050508;--glass:rgba(255,255,255,0.04);--border:rgba(0,255,231,0.18);--txt:#c8d4e8;--dim:#4a5568}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:'Rajdhani',sans-serif;color:var(--txt);overflow:hidden;user-select:none;cursor:none;}
+#game-canvas{position:fixed;top:0;left:0;z-index:1;display:block}
 
-        #main-menu {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at 50% 50%, #0a0a20 0%, #000 100%);
-            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .menu-container {
-            background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(25px);
-            padding: 30px 40px; border-radius: 30px; border: 1px solid rgba(0, 242, 255, 0.2);
-            text-align: center; width: 440px; box-shadow: 0 0 50px rgba(0,0,0,0.8);
-        }
-        h1 { font-size: 2.8rem; font-weight: 900; margin: 0; background: linear-gradient(to bottom, #fff, var(--neon-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 30px rgba(0, 242, 255, 0.5); letter-spacing: 5px; }
-        .sub-title { color: var(--neon-pink); font-size: 0.7rem; letter-spacing: 5px; margin-bottom: 15px; font-weight: bold; }
+/* Custom UI Cursor */
+#cursor{position:fixed;top:-20px;left:-20px;width:10px;height:10px;background:var(--acc);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);box-shadow:0 0 10px var(--acc),0 0 25px rgba(0,255,231,0.4);mix-blend-mode:screen}
 
-        .rank-card { background: rgba(255, 0, 85, 0.1); border: 1px dashed var(--neon-pink); padding: 12px; border-radius: 12px; margin-bottom: 20px; }
-        #best-score { color: var(--neon-blue); font-size: 1rem; }
-        #rank-name { font-size: 1.2rem; display: block; margin-top: 5px; text-shadow: 0 0 10px #fff; }
+/* Fixed Center Crosshair for 3D FPS Mode */
+#crosshair{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:500;display:none}
 
-        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left; margin-bottom: 15px; }
-        label { font-size: 0.6rem; color: var(--neon-blue); text-transform: uppercase; letter-spacing: 1px; }
-        input, select { width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(0, 242, 255, 0.3); border-radius: 6px; color: #fff; font-family: 'Orbitron'; font-size: 0.8rem; margin-top: 5px; outline: none; box-sizing: border-box; }
+/* ─── MENU ─── */
+#menu{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 25%,rgba(0,255,231,0.07) 0%,transparent 50%),radial-gradient(ellipse at 80% 75%,rgba(255,45,107,0.07) 0%,transparent 50%),var(--bg);transition:opacity .5s,visibility .5s}
+#menu.gone{opacity:0;visibility:hidden;pointer-events:none}
+.card{display:grid;grid-template-columns:250px 1fr;width:min(880px,95vw);height:min(600px,90vh);border:1px solid var(--border);border-radius:20px;overflow:hidden;background:var(--glass);backdrop-filter:blur(40px);box-shadow:0 0 80px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.06);animation:cardIn .7s cubic-bezier(.16,1,.3,1)}
+@keyframes cardIn{from{opacity:0;transform:scale(.93) translateY(16px)}to{opacity:1;transform:none}}
+.sb{background:rgba(0,255,231,.03);border-right:1px solid var(--border);padding:32px 22px;display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden}
+.sb::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,255,231,.025) 39px,rgba(0,255,231,.025) 40px);pointer-events:none}
+.logo{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;letter-spacing:4px;color:#fff;animation:glitch 5s infinite}
+@keyframes glitch{0%,93%,100%{clip-path:none;transform:none}94%{clip-path:polygon(0 20%,100% 20%,100% 25%,0 25%);transform:translate(-2px);color:var(--acc2)}95%{clip-path:polygon(0 70%,100% 70%,100% 75%,0 75%);transform:translate(2px);color:var(--acc)}96%{clip-path:none;transform:none}}
+.by{font-family:'Share Tech Mono';font-size:.6rem;color:var(--acc);letter-spacing:3px;margin-bottom:24px}
+.rank-box{background:rgba(255,45,107,.08);border:1px solid rgba(255,45,107,.25);border-radius:10px;padding:13px;margin-bottom:18px}
+.rank-box .lbl{font-size:.55rem;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+.rank-box .bscore{font-family:'Orbitron';font-size:1.6rem;color:#fff;margin:3px 0}
+.rank-box .brank{font-size:.8rem;color:var(--acc2);font-weight:700}
+.tier-list{margin-top:auto}
+.tier{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:.68rem}
+.tier .pts{font-family:'Share Tech Mono';color:var(--acc)}
+.mp{padding:32px 36px;display:flex;flex-direction:column;gap:18px;overflow-y:auto}
+.slbl{font-size:.55rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:.6rem;letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+.field input,.field select{background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-family:'Share Tech Mono';font-size:.88rem;padding:9px 11px;outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;width:100%; cursor:none;}
+.field input:focus,.field select:focus{border-color:var(--acc);box-shadow:0 0 0 2px rgba(0,255,231,.1)}
+.field select option{background:#0d0d1a}
+.divider{height:1px;background:rgba(255,255,255,.06)}
+.ch-preview{height:72px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.mode-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.55rem;letter-spacing:2px;text-transform:uppercase;font-weight:700;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.25);color:var(--acc3);margin-bottom:16px}
+.start-btn{background:linear-gradient(135deg,var(--acc),#00c4b4);color:#000;border:none;border-radius:12px;padding:15px;font-family:'Orbitron';font-size:.85rem;font-weight:700;letter-spacing:3px;cursor:none;transition:all .25s;box-shadow:0 0 30px rgba(0,255,231,.15);margin-top:auto;position:relative;overflow:hidden}
+.start-btn::after{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.12),transparent)}
+.start-btn:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(0,255,231,.35),0 8px 24px rgba(0,0,0,.5)}
+/* ─── HUD ─── */
+#hud{position:fixed;inset:0;z-index:200;pointer-events:none;display:none}
+.hud-tl{position:absolute;top:22px;left:22px;display:flex;flex-direction:column;gap:8px}
+.hud-pill{background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.08);backdrop-filter:blur(10px);border-radius:8px;padding:7px 14px;font-family:'Share Tech Mono';font-size:.8rem}
+.hud-pill span{color:var(--acc);margin-left:6px}
+.score-big{font-family:'Orbitron';font-size:2.6rem;font-weight:900;color:#fff;text-shadow:0 0 20px rgba(0,255,231,.3);transition:transform .08s,color .08s}
+.score-big.pop{transform:scale(1.18);color:var(--acc)}
+.hud-tr{position:absolute;top:22px;right:22px;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.timer-wrap{position:relative;width:88px;height:88px}
+.timer-wrap svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}
+.tc-bg{fill:none;stroke:rgba(255,255,255,.06);stroke-width:3}
+.tc{fill:none;stroke:var(--acc);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .1s linear,stroke .4s}
+.timer-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Orbitron';font-size:1rem;color:#fff;line-height:1}
+.timer-text small{font-size:.45rem;color:var(--dim);letter-spacing:1px;margin-top:2px}
+.acc-pill{background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:6px 13px;font-family:'Share Tech Mono';font-size:.72rem;color:var(--dim)}
+.acc-pill span{color:var(--acc3)}
+#combo-wrap{position:absolute;top:50%;left:50%;transform:translate(-50%,-110px);font-family:'Orbitron';font-size:1.3rem;font-weight:900;color:var(--acc3);text-shadow:0 0 20px var(--acc3);opacity:0;transition:opacity .25s;pointer-events:none;text-align:center}
+#combo-wrap.show{opacity:1}
+.hud-bot{position:absolute;bottom:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:12px 22px;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.streak-bar{display:flex;gap:4px}
+.sd{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.12);transition:all .2s}
+.sd.on{background:var(--acc);box-shadow:0 0 7px var(--acc)}
+.sd.gold{background:var(--acc3);box-shadow:0 0 7px var(--acc3)}
+.sess{display:flex;gap:18px;font-family:'Share Tech Mono';font-size:.68rem;color:var(--dim)}
+.sess b{color:var(--txt)}
 
-        .btn-glow { width: 100%; padding: 15px; margin-top: 10px; background: var(--neon-blue); color: #000; border: none; border-radius: 10px; font-weight: 900; font-size: 1rem; cursor: pointer; transition: 0.3s; }
-        .btn-glow:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 0 20px var(--neon-blue); }
+/* ─── PAUSE ─── */
+#pause{position:fixed;inset:0;z-index:2000;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(0,0,0,.88);backdrop-filter:blur(20px)}
+#pause h2{font-family:'Orbitron';font-size:1.8rem;letter-spacing:8px;color:#fff;margin-bottom:16px}
+.pbtn{width:250px;padding:13px;border-radius:10px;font-family:'Orbitron';font-size:.75rem;letter-spacing:2px;cursor:none;transition:all .2s;border:none}
+.pbtn.pri{background:var(--acc);color:#000}
+.pbtn.sec{background:transparent;border:1px solid rgba(255,255,255,.2);color:var(--txt)}
+.pbtn:hover{transform:translateY(-2px)}
+/* ─── END ─── */
+#end{position:fixed;inset:0;z-index:3000;display:none;flex-direction:column;align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 35%,rgba(0,255,231,.07),transparent 55%),var(--bg);animation:fadeIn .5s}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.end-card{background:var(--glass);border:1px solid var(--border);border-radius:22px;padding:44px 52px;text-align:center;max-width:540px;width:90%;backdrop-filter:blur(40px);box-shadow:0 0 100px rgba(0,0,0,.8);animation:cardIn .6s cubic-bezier(.16,1,.3,1)}
+.final-score{font-family:'Orbitron';font-size:4rem;font-weight:900;color:#fff;text-shadow:0 0 40px rgba(0,255,231,.4);margin:6px 0}
+.final-rank{font-size:1rem;color:var(--acc2);font-weight:700;margin-bottom:28px;letter-spacing:2px}
+.new-best-tag{font-family:'Share Tech Mono';font-size:.6rem;color:var(--acc3);letter-spacing:3px;display:none;margin-bottom:4px}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:24px 0}
+.sc{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:13px}
+.sc .sv{font-family:'Orbitron';font-size:1.4rem;color:var(--acc)}
+.sc .sk{font-size:.6rem;letter-spacing:2px;color:var(--dim);margin-top:3px;text-transform:uppercase}
+.end-actions{display:flex;gap:11px;margin-top:6px}
+.ebtn{flex:1;padding:13px;border-radius:10px;font-family:'Orbitron';font-size:.72rem;letter-spacing:2px;cursor:none;transition:all .2s;border:none}
+.ebtn.pri{background:var(--acc);color:#000}
+.ebtn.sec{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:var(--txt)}
+.ebtn:hover{transform:translateY(-2px)}
+body::after{content:'';position:fixed;inset:0;z-index:9998;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.025) 2px,rgba(0,0,0,.025) 4px)}
 
-        #rank-sidebar-btn { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.8); border: 1px solid var(--neon-blue); color: var(--neon-blue); padding: 25px 12px; cursor: pointer; writing-mode: vertical-rl; border-radius: 12px; font-size: 0.7rem; letter-spacing: 2px; transition: 0.3s; z-index: 1001; }
-        #rank-modal { position: absolute; left: -400px; top: 0; width: 320px; height: 100%; background: rgba(0,0,0,0.95); border-right: 2px solid var(--neon-blue); z-index: 2000; transition: 0.5s ease-in-out; padding: 40px 20px; box-sizing: border-box; }
-        #rank-modal.active { left: 0; }
-        .close-rank { position: absolute; top: 15px; right: 20px; font-size: 2rem; cursor: pointer; color: var(--neon-pink); }
-
-        /* Crosshair Styling */
-        #crosshair-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; pointer-events: none; z-index: 100; }
-        .ch-line-v { position: absolute; left: 50%; transform: translateX(-50%); width: 2px; height: 10px; }
-        .ch-line-h { position: absolute; top: 50%; transform: translateY(-50%); height: 2px; width: 10px; }
-        .ch-dot { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; border-radius: 50%; transform: translate(-50%, -50%); }
-        .ch-circle { position: absolute; top: 50%; left: 50%; width: 12px; height: 12px; border-radius: 50%; transform: translate(-50%, -50%); box-sizing: border-box; }
-
-        #hud { position: absolute; top: 20px; left: 20px; display: none; z-index: 10; pointer-events: none; }
-        .hud-item { background: rgba(0,0,0,0.8); padding: 8px 15px; border-left: 4px solid var(--neon-pink); margin-bottom: 5px; font-size: 0.8rem; border-radius: 0 8px 8px 0; }
-        #pause-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; }
-    </style>
+/* Hide default cursor on ALL interactive elements */
+button, input, select, option, a { cursor: none !important; }
+</style>
 </head>
 <body>
 
-    <div id="rank-modal">
-        <div class="close-rank" id="close-rank-btn">&times;</div>
-        <h2 style="color: var(--neon-blue);">RANKS</h2>
-        <div style="font-size: 0.8rem; line-height: 1.6;">
-            <p><b style="color:var(--neon-blue)">0-100:</b> POTATO BOT 🥔</p>
-            <p><b>101-500:</b> TURBO SNAIL 🐌</p>
-            <p><b>501-1200:</b> DAILY CLOWN 🤡</p>
-            <p><b>1201-2500:</b> SEMI-HUMAN 🤖</p>
-            <p><b>2501+:</b> HEKARI'S DISCIPLE 👽</p>
+<div id="cursor"></div>
+
+<div id="menu">
+  <div class="card">
+    <div class="sb">
+      <div class="logo">FLICK★</div>
+      <div class="by">// 90° ARC EDITION</div>
+      <div class="rank-box">
+        <div class="lbl">Personal Best</div>
+        <div class="bscore" id="best-score">0000</div>
+        <div class="brank" id="best-rank">POTATO BOT 🥔</div>
+      </div>
+      <div class="tier-list">
+        <div class="slbl">Rank Tiers</div>
+        <div class="tier"><span>🥔 POTATO BOT</span><span class="pts">0–100</span></div>
+        <div class="tier"><span>🐌 TURBO SNAIL</span><span class="pts">101–500</span></div>
+        <div class="tier"><span>🤡 DAILY CLOWN</span><span class="pts">501–1200</span></div>
+        <div class="tier"><span>🤖 SEMI-HUMAN</span><span class="pts">1201–2500</span></div>
+        <div class="tier"><span>👽 HEKARI'S DISCIPLE</span><span class="pts">2501+</span></div>
+      </div>
+    </div>
+    <div class="mp">
+      <div>
+        <div class="mode-tag">⚡ 90° PRO TRAINER — 30s</div>
+        <div class="slbl">Configuration</div>
+      </div>
+      <div class="field">
+        <label>Agent Callsign</label>
+        <input type="text" id="username" placeholder="Enter callsign..." maxlength="18">
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>CS2 Sensitivity</label>
+          <input type="number" id="sens" value="1.0" step="0.1" min="0.1" max="20">
         </div>
-    </div>
-
-    <div id="rank-sidebar-btn">VIEW RANKS</div>
-
-    <div id="main-menu">
-        <div class="menu-container">
-            <h1>FLICK STAR</h1>
-            <div class="sub-title">BY HEKARI</div>
-            
-            <div class="rank-card">
-                <span id="best-score">BEST: 0000</span>
-                <span id="rank-name">POTATO BOT 🥔</span>
-            </div>
-
-            <div class="input-field" style="text-align:left; margin-bottom:15px;">
-                <label>Agent Name</label>
-                <input type="text" id="username" placeholder="Guest">
-            </div>
-
-            <div class="settings-grid">
-                <div>
-                    <label>Sensitivity</label>
-                    <input type="number" id="sens" value="1.0" step="0.1">
-                </div>
-                <div>
-                    <label>Color</label>
-                    <select id="color">
-                        <option value="#0f0">GREEN</option>
-                        <option value="#f00">RED</option>
-                        <option value="#00f">BLUE</option>
-                        <option value="#ff0">GOLD</option>
-                    </select>
-                </div>
-            </div>
-
-            <div style="text-align: left; margin-bottom: 20px;">
-                <label>Crosshair Style</label>
-                <select id="ch-style">
-                    <option value="classic">Classic (Lines + Dot)</option>
-                    <option value="circle">Circle</option>
-                    <option value="default">Default Ring</option>
-                    <option value="nodot">Cross (No Dot)</option>
-                    <option value="dot">Dot Only</option>
-                </select>
-            </div>
-
-            <button class="btn-glow" id="start-btn">ENGAGE MISSION</button>
+        <div class="field">
+          <label>Crosshair Color</label>
+          <select id="color">
+            <option value="#00ffe7">CYAN</option>
+            <option value="#00ff55">GREEN</option>
+            <option value="#ff2d6b">RED</option>
+            <option value="#ffc400">GOLD</option>
+            <option value="#ffffff">WHITE</option>
+            <option value="#ff6afc">PINK</option>
+          </select>
         </div>
+        <div class="field">
+          <label>Crosshair Style</label>
+          <select id="ch-style">
+            <option value="cs2">CS2 Default</option>
+            <option value="classic">Classic + Dot</option>
+            <option value="cross">Cross (No Dot)</option>
+            <option value="circle">Circle</option>
+            <option value="dot">Dot Only</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Target Difficulty</label>
+          <select id="tsize">
+            <option value="normal">Normal (10pts)</option>
+            <option value="small">Small (25pts)</option>
+            <option value="mixed">Mixed (Adaptive)</option>
+          </select>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="slbl">Crosshair Preview</div>
+        <div class="ch-preview">
+          <svg id="ch-prev-svg" width="60" height="60" viewBox="0 0 60 60"></svg>
+        </div>
+      </div>
+      <button class="start-btn" id="start-btn">⚡ ENGAGE MISSION (LOCK MOUSE)</button>
     </div>
+  </div>
+</div>
 
-    <div id="crosshair-container"></div>
+<div id="crosshair">
+  <svg id="ch-game-svg" width="60" height="60" viewBox="0 0 60 60"></svg>
+</div>
 
-    <div id="pause-overlay">
-        <h1 style="color: var(--neon-blue);">PAUSED</h1>
-        <button class="btn-glow" style="width: 250px;" id="resume-btn">CONTINUE</button>
-        <button class="btn-glow" style="width: 250px; background: none; border: 1px solid #fff; color: #fff; margin-top: 15px;" id="quit-btn">ABORT</button>
+<div id="hud">
+  <div class="hud-tl">
+    <div class="hud-pill">AGENT <span id="ui-agent">—</span></div>
+    <div class="score-big" id="score-display">0</div>
+  </div>
+  <div class="hud-tr">
+    <div class="timer-wrap">
+      <svg width="88" height="88" viewBox="0 0 88 88">
+        <circle class="tc-bg" cx="44" cy="44" r="37"/>
+        <circle class="tc" id="timer-ring" cx="44" cy="44" r="37" stroke-dasharray="232.48" stroke-dashoffset="0"/>
+      </svg>
+      <div class="timer-text"><span id="time-display">30.0</span><small>SEC</small></div>
     </div>
-
-    <div id="hud">
-        <div class="hud-item">AGENT: <span id="ui-user">-</span></div>
-        <div class="hud-item">SCORE: <span id="score-val">0</span></div>
-        <div class="hud-item">TIME: <span id="time-val">30.0</span>s</div>
+    <div class="acc-pill">ACC <span id="acc-display">—</span></div>
+  </div>
+  <div id="combo-wrap"></div>
+  <div class="hud-bot">
+    <div>
+      <div style="font-size:.55rem;color:var(--dim);letter-spacing:1px;margin-bottom:4px;text-transform:uppercase">Streak</div>
+      <div class="streak-bar" id="streak-bar"></div>
     </div>
+    <div class="sess">
+      <div>HITS <b id="s-hits">0</b></div>
+      <div>MISS <b id="s-miss">0</b></div>
+      <div>COMBO <b id="s-combo">×1</b></div>
+      <div>KPS <b id="s-kps">0.0</b></div>
+    </div>
+  </div>
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<div id="pause">
+  <h2>⏸ PAUSED</h2>
+  <div style="color:var(--dim); font-size:0.8rem; margin-bottom: 20px;">Press RESUME to lock mouse again</div>
+  <button class="pbtn pri" id="resume-btn">RESUME</button>
+  <button class="pbtn sec" id="quit-btn">ABORT MISSION</button>
+</div>
 
-    <script>
-        function getRank(score) {
-            if (score >= 2501) return "HEKARI'S DISCIPLE 👽";
-            if (score >= 1201) return "SEMI-HUMAN 🤖";
-            if (score >= 501) return "DAILY CLOWN 🤡";
-            if (score >= 101) return "TURBO SNAIL 🐌";
-            return "POTATO BOT 🥔";
-        }
+<div id="end">
+  <div class="end-card">
+    <div class="new-best-tag" id="new-best-tag">✦ NEW PERSONAL BEST ✦</div>
+    <div class="final-score" id="final-score">0</div>
+    <div class="final-rank" id="final-rank"></div>
+    <div class="stats-row">
+      <div class="sc"><div class="sv" id="e-acc">0%</div><div class="sk">Accuracy</div></div>
+      <div class="sc"><div class="sv" id="e-kps">0.0</div><div class="sk">Kills/Sec</div></div>
+      <div class="sc"><div class="sv" id="e-combo">×1</div><div class="sk">Best Combo</div></div>
+    </div>
+    <div class="end-actions">
+      <button class="ebtn pri" id="retry-btn">PLAY AGAIN</button>
+      <button class="ebtn sec" id="mainmenu-btn">MAIN MENU</button>
+    </div>
+  </div>
+</div>
 
-        function updateMenuInfo() {
-            const high = localStorage.getItem('flickstar_highscore') || 0;
-            document.getElementById('best-score').innerText = "BEST: " + high;
-            document.getElementById('rank-name').innerText = getRank(parseInt(high));
-        }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+/* ══════════════════════
+   UTILS & STATE
+══════════════════════ */
+const $ = id => document.getElementById(id);
+const getRank = s => s>=2501?"HEKARI'S DISCIPLE 👽":s>=1201?"SEMI-HUMAN 🤖":s>=501?"DAILY CLOWN 🤡":s>=101?"TURBO SNAIL 🐌":"POTATO BOT 🥔";
+const W = () => window.innerWidth;
+const H = () => window.innerHeight;
 
-        function setCrosshair(style, color) {
-            const container = document.getElementById('crosshair-container');
-            container.innerHTML = '';
-            container.style.display = 'block';
+let isPlaying = false, isPaused = false;
+let score = 0, hits = 0, misses = 0, combo = 1, maxCombo = 1, timeLeft = 30.0;
+const GAME_DUR = 30.0;
+let bestScore = parseInt(localStorage.getItem('fs_high')) || 0;
 
-            if (style === 'classic' || style === 'nodot') {
-                container.innerHTML += `<div class="ch-line-v" style="top:-12px; background:${color}"></div>`;
-                container.innerHTML += `<div class="ch-line-v" style="top:2px; background:${color}"></div>`;
-                container.innerHTML += `<div class="ch-line-h" style="left:-12px; background:${color}"></div>`;
-                container.innerHTML += `<div class="ch-line-h" style="left:2px; background:${color}"></div>`;
-                if(style === 'classic') container.innerHTML += `<div class="ch-dot" style="background:${color}"></div>`;
-            } else if (style === 'circle') {
-                container.innerHTML += `<div class="ch-circle" style="border: 2px solid ${color}"></div>`;
-            } else if (style === 'dot') {
-                container.innerHTML += `<div class="ch-dot" style="background:${color}"></div>`;
-            } else {
-                container.innerHTML += `<div style="width:14px; height:14px; border:2px solid ${color}; border-radius:50%"></div>`;
-            }
-        }
+/* Camera Rotation Variables */
+let pitch = 0; // Up/Down rotation
+let yaw = 0;   // Left/Right rotation
 
-        document.getElementById('rank-sidebar-btn').onclick = () => document.getElementById('rank-modal').classList.add('active');
-        document.getElementById('close-rank-btn').onclick = () => document.getElementById('rank-modal').classList.remove('active');
+/* ══════════════════════
+   AUDIO
+══════════════════════ */
+let AC = null;
+function initAudio() { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); }
+function beep(freq, freq2, dur, vol=0.1, type='sine') {
+  try {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.connect(g); g.connect(AC.destination); o.type = type;
+    o.frequency.setValueAtTime(freq, AC.currentTime);
+    o.frequency.exponentialRampToValueAtTime(freq2, AC.currentTime + dur);
+    g.gain.setValueAtTime(vol, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+    o.start(); o.stop(AC.currentTime + dur + 0.01);
+  } catch(e){}
+}
+const sfxHit = (crit) => { beep(crit?1400:900, crit?2600:1500, crit?.1:.08, crit?.14:.1); };
+const sfxMiss = () => beep(240,160,.1,.04,'sawtooth');
+const sfxCombo = () => [440,554,660,880].forEach((f,i)=>setTimeout(()=>beep(f,f+80,.1,.07),i*65));
+const sfxEnd = () => [380,280,200,140].forEach((f,i)=>setTimeout(()=>beep(f,f-40,.2,.09,'square'),i*180));
 
-        document.getElementById('username').value = localStorage.getItem('flickstar_user') || "";
-        document.getElementById('sens').value = localStorage.getItem('flickstar_sens') || "1.0";
-        document.getElementById('color').value = localStorage.getItem('flickstar_color') || "#0f0";
-        document.getElementById('ch-style').value = localStorage.getItem('flickstar_style') || "default";
-        updateMenuInfo();
+/* ══════════════════════
+   CROSSHAIR GENERATOR
+══════════════════════ */
+function buildCH(svgEl, style, color) {
+  const NS = 'http://www.w3.org/2000/svg';
+  svgEl.innerHTML = '';
+  const C = 30;
+  const mk = (tag,attrs) => { const el=document.createElementNS(NS,tag); for(const[k,v] of Object.entries(attrs)) el.setAttribute(k,v); return svgEl.appendChild(el); };
+  const L = (x1,y1,x2,y2) => mk('line',{x1,y1,x2,y2,stroke:color,'stroke-width':2,'stroke-linecap':'round'});
+  const dot  = r => mk('circle',{cx:C,cy:C,r,fill:color});
+  const ring = (r,sw) => mk('circle',{cx:C,cy:C,r,fill:'none',stroke:color,'stroke-width':sw||1.5});
+  if      (style==='classic'){ L(C,C-14,C,C-4); L(C,C+4,C,C+14); L(C-14,C,C-4,C); L(C+4,C,C+14,C); dot(2); }
+  else if (style==='cross')  { L(C,C-14,C,C-4); L(C,C+4,C,C+14); L(C-14,C,C-4,C); L(C+4,C,C+14,C); }
+  else if (style==='circle') { ring(8,2); dot(2); }
+  else if (style==='dot')    { dot(3); }
+  else /* cs2 */             { ring(6,1.5); L(C,C-14,C,C-8); L(C,C+8,C,C+14); L(C-14,C,C-8,C); L(C+8,C,C+14,C); }
+}
 
-        let score = 0, timeLeft = 30, gameActive = false, isPaused = false;
-        let sensitivity = 0.001, currentTarget = null;
+const refreshPreview = () => {
+    buildCH($('ch-prev-svg'), $('ch-style').value, $('color').value);
+    buildCH($('ch-game-svg'), $('ch-style').value, $('color').value);
+    document.documentElement.style.setProperty('--acc', $('color').value);
+};
+$('ch-style').addEventListener('change', refreshPreview);
+$('color').addEventListener('change', refreshPreview);
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+// Load saved data
+$('username').value = localStorage.getItem('fs_user')  || '';
+$('sens').value     = localStorage.getItem('fs_sens')  || '1.0';
+$('color').value    = localStorage.getItem('fs_color') || '#00ffe7';
+$('ch-style').value = localStorage.getItem('fs_style') || 'cs2';
+$('tsize').value    = localStorage.getItem('fs_tsize') || 'normal';
+refreshPreview();
+(()=>{ $('best-score').textContent=String(bestScore).padStart(4,'0'); $('best-rank').textContent=getRank(bestScore); })();
 
-        scene.add(new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(Array.from({length: 4500}, () => (Math.random()-0.5)*150), 3)), new THREE.PointsMaterial({color: 0x333344, size: 0.05})));
+/* ══════════════════════
+   THREE.JS SETUP
+══════════════════════ */
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(90, W() / H(), 0.1, 1000);
+camera.position.set(0, 0, 0); 
+camera.rotation.order = 'YXZ'; 
 
-        const targetMat = new THREE.PointsMaterial({ size: 1.8, transparent: true, blending: THREE.AdditiveBlending, map: (function(){ const c = document.createElement('canvas'); c.width=64; c.height=64; const g = c.getContext('2d').createRadialGradient(32,32,0,32,32,32); g.addColorStop(0, '#fff'); g.addColorStop(0.3, '#ff0055'); g.addColorStop(1, 'transparent'); c.getContext('2d').fillStyle = g; c.getContext('2d').arc(32,32,32,0,Math.PI*2); c.getContext('2d').fill(); return new THREE.CanvasTexture(c); })() });
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(W(), H());
+renderer.domElement.id = 'game-canvas';
+document.body.insertBefore(renderer.domElement, document.body.firstChild);
 
-        function spawn() {
-            if(currentTarget) scene.remove(currentTarget);
-            const g = new THREE.BufferGeometry();
-            g.setAttribute('position', new THREE.Float32BufferAttribute([(Math.random()-0.5)*22, (Math.random()-0.5)*14, -18], 3));
-            currentTarget = new THREE.Points(g, targetMat);
-            scene.add(currentTarget);
-        }
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+dirLight.position.set(0, 10, 0);
+scene.add(dirLight);
 
-        document.getElementById('start-btn').onclick = () => {
-            const user = document.getElementById('username').value || "Guest";
-            const sens = document.getElementById('sens').value;
-            const col = document.getElementById('color').value;
-            const style = document.getElementById('ch-style').value;
+window.addEventListener('resize', () => {
+  camera.aspect = W() / H();
+  camera.updateProjectionMatrix();
+  renderer.setSize(W(), H());
+});
 
-            localStorage.setItem('flickstar_user', user);
-            localStorage.setItem('flickstar_sens', sens);
-            localStorage.setItem('flickstar_color', col);
-            localStorage.setItem('flickstar_style', style);
+/* ══════════════════════
+   POINTER LOCK & CAMERA
+══════════════════════ */
+document.addEventListener('mousemove', e => {
+  if (!isPlaying || isPaused) {
+    $('cursor').style.display = 'block';
+    $('cursor').style.left = e.clientX+'px';
+    $('cursor').style.top  = e.clientY+'px';
+    return;
+  }
 
-            sensitivity = 0.0009 * parseFloat(sens);
-            setCrosshair(style, col);
-            document.getElementById('ui-user').innerText = user;
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('rank-sidebar-btn').style.display = 'none';
-            document.getElementById('hud').style.display = 'block';
-            document.body.requestPointerLock();
-            gameActive = true; score = 0; timeLeft = 30; spawn();
-        };
+  if (document.pointerLockElement === document.body) {
+    $('cursor').style.display = 'none';
+    const sens = parseFloat($('sens').value) || 1.0;
+    const sensMultiplier = 0.0022; 
+    
+    yaw -= e.movementX * sens * sensMultiplier;
+    pitch -= e.movementY * sens * sensMultiplier;
+    pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
+    
+    camera.rotation.set(pitch, yaw, 0);
+  }
+});
 
-        document.getElementById('resume-btn').onclick = () => document.body.requestPointerLock();
-        document.getElementById('quit-btn').onclick = () => location.reload();
+document.addEventListener('pointerlockchange', () => {
+  if (document.pointerLockElement === document.body) {
+    if (isPaused) {
+      isPaused = false;
+      $('pause').style.display = 'none';
+      $('cursor').style.display = 'none';
+      $('crosshair').style.display = 'block';
+      lastTime = performance.now();
+    }
+  } else {
+    if (isPlaying && !isPaused) {
+      isPaused = true;
+      $('pause').style.display = 'flex';
+      $('cursor').style.display = 'block';
+      $('crosshair').style.display = 'none';
+    }
+  }
+});
 
-        document.addEventListener('pointerlockchange', () => {
-            isPaused = document.pointerLockElement !== document.body && gameActive;
-            document.getElementById('pause-overlay').style.display = isPaused ? 'flex' : 'none';
-            document.getElementById('crosshair-container').style.display = isPaused ? 'none' : 'block';
-        });
+/* ══════════════════════
+   GAME LOGIC (90° ARC TARGETS)
+══════════════════════ */
+let targets = [];
+const raycaster = new THREE.Raycaster();
+const centerScreen = new THREE.Vector2(0, 0); 
 
-        setInterval(() => {
-            if(gameActive && !isPaused) {
-                timeLeft -= 0.1;
-                document.getElementById('time-val').innerText = Math.max(0, timeLeft).toFixed(1);
-                if(timeLeft <= 0) {
-                    gameActive = false;
-                    const high = localStorage.getItem('flickstar_highscore') || 0;
-                    if(score > high) localStorage.setItem('flickstar_highscore', score);
-                    alert("FINAL: " + score + " | RANK: " + getRank(score));
-                    location.reload();
-                }
-            }
-        }, 100);
+function spawnTarget() {
+  const diff = $('tsize').value;
+  let scale = diff === 'small' ? 0.6 : diff === 'normal' ? 1.2 : (Math.random() * 0.8 + 0.5);
+  const colorVal = $('color').value;
 
-        document.addEventListener('mousemove', (e) => {
-            if(gameActive && !isPaused && document.pointerLockElement) {
-                camera.rotation.y -= e.movementX * sensitivity;
-                camera.rotation.x -= e.movementY * sensitivity;
-                camera.rotation.x = Math.max(-1.3, Math.min(1.3, camera.rotation.x));
-            }
-        });
+  const group = new THREE.Group();
 
-        window.onmousedown = () => {
-            if(!gameActive || isPaused) return;
-            const r = new THREE.Raycaster();
-            r.setFromCamera(new THREE.Vector2(0,0), camera);
-            r.params.Points.threshold = 0.8;
-            if(r.intersectObject(currentTarget).length > 0) {
-                score += 10; timeLeft += 0.35;
-                document.getElementById('score-val').innerText = score;
-                spawn();
-            }
-        };
+  const coreGeo = new THREE.IcosahedronGeometry(0.7, 1);
+  const coreMat = new THREE.MeshPhongMaterial({ color: colorVal, emissive: colorVal, emissiveIntensity: 0.3, flatShading: true });
+  const core = new THREE.Mesh(coreGeo, coreMat);
+  group.add(core);
 
-        camera.rotation.order = 'YXZ';
-        function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); }
-        animate();
-        window.onresize = () => { renderer.setSize(window.innerWidth, window.innerHeight); camera.aspect = window.innerWidth/window.innerHeight; camera.updateProjectionMatrix(); };
-    </script>
+  const ringGeo = new THREE.TorusGeometry(1.2, 0.05, 8, 32);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  group.add(ring);
+
+  group.scale.set(scale, scale, scale);
+  
+  // ── 90 DEGREE FOV LOGIC ──
+  const radius = 15; // المسافة الثابتة عن اللاعب
+  
+  // الزاوية الأفقية: -Math.PI/2 تعني الأمام مباشرة.
+  // نجمع عليها رقم عشوائي بين -45 درجة و +45 درجة (المجموع 90 درجة)
+  const theta = -Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 2); 
+  
+  // الزاوية العمودية: Math.PI/2 تعني مستوى النظر (خط الأفق).
+  // نجمع عليها رقم عشوائي بسيط جداً عشان الأهداف ما تروح فوق بزيادة أو تحت بزيادة.
+  const phi = Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 6); 
+
+  group.position.x = radius * Math.sin(phi) * Math.cos(theta);
+  group.position.y = radius * Math.cos(phi);
+  group.position.z = radius * Math.sin(phi) * Math.sin(theta);
+  
+  group.lookAt(camera.position);
+
+  group.userData = { 
+    life: 2.5, 
+    maxLife: 2.5, 
+    baseScale: scale, 
+    isSmall: scale <= 0.7,
+    rotX: (Math.random() - 0.5) * 3, 
+    rotY: (Math.random() - 0.5) * 3
+  };
+
+  scene.add(group);
+  targets.push(group);
+}
+
+function updateHUD() {
+  $('score-display').innerText = score;
+  $('s-hits').innerText = hits;
+  $('s-miss').innerText = misses;
+  $('s-combo').innerText = `×${maxCombo}`;
+  
+  let acc = hits + misses > 0 ? Math.round((hits / (hits + misses)) * 100) : 100;
+  $('acc-display').innerText = `${acc}%`;
+  
+  $('streak-bar').innerHTML = '';
+  let dots = Math.min(combo - 1, 5);
+  for(let i=0; i<5; i++) {
+      let d = document.createElement('div');
+      d.className = `sd ${i < dots ? (combo > 5 ? 'gold' : 'on') : ''}`;
+      $('streak-bar').appendChild(d);
+  }
+}
+
+window.addEventListener('mousedown', (e) => {
+  if (!isPlaying || isPaused) return;
+  
+  if (document.pointerLockElement !== document.body) {
+    document.body.requestPointerLock();
+    return;
+  }
+
+  raycaster.setFromCamera(centerScreen, camera);
+  const intersects = raycaster.intersectObjects(targets, true);
+
+  if (intersects.length > 0) {
+    let hitMesh = intersects[0].object;
+    let hitTarget = hitMesh.parent; 
+    
+    let index = targets.indexOf(hitTarget);
+    if(index > -1) {
+      scene.remove(hitTarget);
+      targets.splice(index, 1);
+      
+      hits++;
+      let pts = hitTarget.userData.isSmall ? 25 : 10;
+      score += pts * combo;
+      combo++;
+      if(combo > maxCombo) maxCombo = combo;
+      
+      if(combo % 5 === 0) sfxCombo();
+      else sfxHit(hitTarget.userData.isSmall);
+    }
+  } else {
+    misses++;
+    combo = 1;
+    sfxMiss();
+  }
+  updateHUD();
+});
+
+let lastTime = 0;
+function animate(time) {
+  requestAnimationFrame(animate);
+  
+  if (!isPlaying || isPaused) {
+      lastTime = time;
+      renderer.render(scene, camera);
+      return;
+  }
+
+  const dt = (time - lastTime) / 1000;
+  lastTime = time;
+  timeLeft -= dt;
+
+  if (timeLeft <= 0) {
+      document.exitPointerLock(); 
+      endGame();
+      return;
+  }
+
+  const dashoffset = 232.48 - (timeLeft / GAME_DUR) * 232.48;
+  $('timer-ring').style.strokeDashoffset = Math.max(0, dashoffset);
+  $('time-display').innerText = Math.max(0, timeLeft).toFixed(1);
+
+  $('s-kps').innerText = (hits / (GAME_DUR - timeLeft)).toFixed(1);
+
+  // عدد الأهداف على الشاشة (قللناها لـ 3 عشان الزاوية صارت أضيق وواقعية)
+  if (targets.length < 3) spawnTarget(); 
+
+  for (let i = targets.length - 1; i >= 0; i--) {
+    let t = targets[i];
+    t.userData.life -= dt;
+    
+    t.children[0].rotation.x += t.userData.rotX * dt;
+    t.children[0].rotation.y += t.userData.rotY * dt;
+
+    let ratio = t.userData.life / t.userData.maxLife;
+    t.scale.setScalar(Math.max(0.01, t.userData.baseScale * ratio));
+
+    if (t.userData.life <= 0) {
+      scene.remove(t);
+      targets.splice(i, 1);
+      misses++;
+      combo = 1;
+      updateHUD();
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(animate);
+
+/* ══════════════════════
+   GAME FLOW
+══════════════════════ */
+function startGame() {
+  initAudio();
+  
+  localStorage.setItem('fs_user', $('username').value);
+  localStorage.setItem('fs_sens', $('sens').value);
+  localStorage.setItem('fs_color', $('color').value);
+  localStorage.setItem('fs_style', $('ch-style').value);
+  localStorage.setItem('fs_tsize', $('tsize').value);
+
+  const name = $('username').value || 'PLAYER_1';
+  $('ui-agent').innerText = name;
+  
+  score = 0; hits = 0; misses = 0; combo = 1; maxCombo = 1; timeLeft = GAME_DUR;
+  pitch = 0; yaw = 0;
+  camera.rotation.set(0,0,0);
+  
+  targets.forEach(t => scene.remove(t));
+  targets = [];
+  updateHUD();
+  
+  $('menu').classList.add('gone');
+  $('end').style.display = 'none';
+  $('hud').style.display = 'block';
+  
+  $('cursor').style.display = 'none';
+  $('crosshair').style.display = 'block';
+  
+  isPlaying = true;
+  isPaused = false;
+  lastTime = performance.now();
+  
+  document.body.requestPointerLock();
+}
+
+function endGame() {
+  isPlaying = false;
+  sfxEnd();
+  
+  $('hud').style.display = 'none';
+  $('crosshair').style.display = 'none';
+  $('cursor').style.display = 'block';
+  $('end').style.display = 'flex';
+  
+  $('final-score').innerText = score;
+  $('final-rank').innerText = getRank(score);
+  
+  let acc = hits + misses > 0 ? Math.round((hits / (hits + misses)) * 100) : 0;
+  $('e-acc').innerText = `${acc}%`;
+  $('e-kps').innerText = (hits / GAME_DUR).toFixed(1);
+  $('e-combo').innerText = `×${maxCombo}`;
+  
+  if (score > bestScore) {
+    bestScore = score;
+    localStorage.setItem('fs_high', bestScore);
+    $('new-best-tag').style.display = 'block';
+    $('best-score').textContent = String(bestScore).padStart(4,'0');
+    $('best-rank').textContent = getRank(bestScore);
+  } else {
+    $('new-best-tag').style.display = 'none';
+  }
+}
+
+$('start-btn').addEventListener('click', startGame);
+$('retry-btn').addEventListener('click', startGame);
+$('mainmenu-btn').addEventListener('click', () => {
+  $('end').style.display = 'none';
+  $('menu').classList.remove('gone');
+});
+$('resume-btn').addEventListener('click', () => {
+  document.body.requestPointerLock(); 
+});
+$('quit-btn').addEventListener('click', () => {
+  isPlaying = false;
+  isPaused = false;
+  $('pause').style.display = 'none';
+  $('hud').style.display = 'none';
+  $('crosshair').style.display = 'none';
+  $('cursor').style.display = 'block';
+  $('menu').classList.remove('gone');
+});
+</script>
 </body>
 </html>
